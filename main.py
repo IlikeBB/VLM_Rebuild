@@ -262,13 +262,13 @@ class Main__:
         self.curr_device = image.device
 
         img_atts, img_embeds = self.encode_img(image)
-    
+        # print(img_atts.shape, img_embeds.shape)
         # question process
         instruction = samples["instruction_input"]
         if self.chat_template: #添加[INSt]{}[/INST]
                 instruction = [self.prompt_template.format(instruct) for instruct in instruction]
         cond_embeds, cond_atts = self.prompt_wrap(img_embeds, img_atts, instruction, tokenizer = self.model.llama_tokenizer)
-
+        # print(cond_embeds.shape, cond_atts.shape)
         # answer process
         self.model.llama_tokenizer.padding_side = 'right'
         text = [t + self.end_sym for t in samples["answer"]] # 加上換行結束符號
@@ -296,7 +296,7 @@ class Main__:
                             dtype=torch.long).to(self.curr_device).fill_(-100)
         for i, target in enumerate(part_targets):
             targets[i, input_lens[i]+1:input_lens[i]+len(target)+1] = target  # plus 1 for bos
-            
+
         # input data, get loss
         outputs = self.model.llama_model(
                 inputs_embeds=inputs_embeds,

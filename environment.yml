@@ -160,7 +160,7 @@ dependencies:
       - appdirs==1.4.4
       - async-timeout==4.0.3
       - attrs==23.2.0
-      - bitsandbytes==0.43.1
+      - bitsandbytes==0.43.0
       - braceexpand==0.1.7
       - chardet==5.2.0
       - charset-normalizer==3.3.2
@@ -228,7 +228,7 @@ dependencies:
       - opencv-python-headless==4.9.0.80
       - orjson==3.9.14
       - pandas==2.2.0
-      - peft==0.2.0
+      - peft==0.11.1
       - pillow==10.2.0
       - portalocker==2.8.2
       - progressbar2==4.3.2

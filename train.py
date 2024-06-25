@@ -15,12 +15,12 @@ model_config = {'amp':True, 'use_distributed':False,'accum_grad_iters':1,
                 'vis_root_valid': './dataset/minigpt_casing_test/coco/image/test',
                 'ann_paths_valid': ['./dataset/minigpt_casing_test/coco_caption/defe_ready_anno.json']}
 
-llm_config = {'llama_model':'/ssd3/chih/LLM/Llama-2-7b-chat-hf', 'low_resource':False, 'low_res_device':0, 
-              'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
-              }
-# llm_config = {'llama_model':'/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct', 'low_resource':False, 'low_res_device':0, 
+# llm_config = {'llama_model':'/ssd3/chih/LLM/Llama-2-7b-chat-hf', 'low_resource':False, 'low_res_device':0, 
 #               'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
 #               }
+llm_config = {'llama_model':'/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct', 'low_resource':True, 'low_res_device':0, 
+              'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
+              }
 # '/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct'
 
 
@@ -40,6 +40,7 @@ signal.signal(signal.SIGINT, signal_handler)
 try:
     main_ = Main__(model_config=model_config)
     main_.VLM_build(llm_config=llm_config, vit_config=vit_config)
+    print(main_.model)
     main_.main_process(max_epoch=20, lr_config=lr_config)
 except KeyboardInterrupt:
     pass
