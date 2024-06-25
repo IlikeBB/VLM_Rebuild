@@ -6,7 +6,8 @@
 """
 
 from omegaconf import OmegaConf
-
+import torch
+from transformers import StoppingCriteria
 
 class BaseProcessor:
     def __init__(self):
@@ -24,3 +25,16 @@ class BaseProcessor:
         cfg = OmegaConf.create(kwargs)
 
         return self.from_config(cfg)
+    
+class StoppingCriteriaSub(StoppingCriteria):
+
+    def __init__(self, stops=[], encounters=1):
+        super().__init__()
+        self.stops = stops
+
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor):
+        for stop in self.stops:
+            if torch.all(input_ids[:, -len(stop):] == stop).item():
+                return True
+
+        return False

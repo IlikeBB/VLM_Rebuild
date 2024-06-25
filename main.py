@@ -8,6 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, DistributedSampler
 from utils.caption_datasets import COCOCaptionDataset
 from utils.lr_sched_cls import LinearWarmupCosineLRScheduler
+from utils.base_processor import StoppingCriteriaSub
 from tqdm import tqdm
 
 class Main__:
@@ -66,7 +67,7 @@ class Main__:
             outputs = self.model.llama_model.generate(
                 inputs_embeds=embs,
                 attention_mask=attn_mask,
-                max_new_tokens=1024,
+                max_new_tokens=64,
                 num_beams=1,
                 length_penalty=1,
                 temperature=1,
@@ -74,12 +75,17 @@ class Main__:
                 min_length=1,
                 top_p=0.9,
                 repetition_penalty=1,
+                stopping_criteria=[StoppingCriteriaSub]
             )
         answers = []
         for output_token in outputs:
             if output_token[0] == 0:
                 output_token = output_token[1:]
             output_texts = self.model.llama_tokenizer.decode(output_token, skip_special_tokens=True)
+        output_texts = output_texts.split('</s>')[0]  # remove the stop sign </s>
+        output_texts = output_texts.replace("<s>", "")
+        output_texts = output_texts.split(r'[/INST]')[-1].strip()
+        # print(output_texts)
         answers.append(output_texts)
         return answers
     
