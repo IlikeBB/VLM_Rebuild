@@ -6,8 +6,9 @@ from omegaconf import OmegaConf
 import numpy as np
 import torch
 import torch.nn as nn
-from transformers import LlamaTokenizer, AutoTokenizer
-from peft import (LoraConfig, get_peft_model, prepare_model_for_int8_training,)
+from transformers import LlamaTokenizer, AutoTokenizer, BitsAndBytesConfig
+from peft import (LoraConfig, get_peft_model, 
+                  prepare_model_for_int8_training)
 from model.eva_vit import create_eva_vit_g
 from model.MiniGPT_LlamaForCausalLM import LlamaForCausalLM
 
@@ -29,13 +30,27 @@ class build_vlm_model(nn.Module):
             llama_tokenizer.pad_token = "$$"
 
             if low_resource:
-                
                 llama_model = LlamaForCausalLM.from_pretrained(
                     llama_model_path,
                     torch_dtype=torch.float16,
                     load_in_8bit=True,
-                    device_map={'': low_res_device}
+                    device_map="auto"
                 )
+            elif 'Llama-3' in llama_model_path:
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type="nf4",
+                )
+                llama_model = LlamaForCausalLM.from_pretrained(
+                    llama_model_path,
+                    quantization_config=quantization_config,
+                    low_cpu_mem_usage=True,
+                    torch_dtype=torch.bfloat16,
+                    device_map="auto"
+                )
+            
             else:
                 llama_model = LlamaForCausalLM.from_pretrained(
                     llama_model_path,

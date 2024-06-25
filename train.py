@@ -5,9 +5,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 from main import Main__
 
-model_config = {'amp':True, 'use_distributed':False,'iters_per_epoch':1000, 'accum_grad_iters':1,
+model_config = {'amp':True, 'use_distributed':False,'accum_grad_iters':1,
                 'chat_template': True, 'end_sym': '\n', 'prompt_template': "[INST] {} [/INST]",
-                'llama_model': '/ssd3/chih/LLM/Llama-2-7b-chat-hf',
                 'max_txt_len': 1024, 'max_context_len': 3500,
                 'ouput_dir': './exper01_llama3',
                 'stage_ckpt': '/ssd3/chih/LLM/MiniGPT-4-ckpt/checkpoint_stage3.pth', 
@@ -16,12 +15,12 @@ model_config = {'amp':True, 'use_distributed':False,'iters_per_epoch':1000, 'acc
                 'vis_root_valid': './dataset/minigpt_casing_test/coco/image/test',
                 'ann_paths_valid': ['./dataset/minigpt_casing_test/coco_caption/defe_ready_anno.json']}
 
-# llm_config = {'llama_model':'/ssd3/chih/LLM/Llama-2-7b-chat-hf', 'low_resource':False, 'low_res_device':0, 
-#               'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
-#               }
-llm_config = {'llama_model':'/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct', 'low_resource':False, 'low_res_device':0, 
+llm_config = {'llama_model':'/ssd3/chih/LLM/Llama-2-7b-chat-hf', 'low_resource':False, 'low_res_device':0, 
               'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
               }
+# llm_config = {'llama_model':'/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct', 'low_resource':False, 'low_res_device':0, 
+#               'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
+#               }
 # '/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct'
 
 

@@ -312,8 +312,8 @@ class Main__:
             model_no_ddp.eval()
             print("******************Starting Evaluation************************")
             # for cur_iter in tqdm(range(100)):
-            # for cur_iter in tqdm(range(dataloader.__len__())):
-            for cur_iter in range(dataloader.__len__()):
+            for cur_iter in tqdm(range(dataloader.__len__())):
+            # for cur_iter in range(dataloader.__len__()):
                 samples = next(iter(dataloader))
                 with torch.cuda.amp.autocast(enabled=True):
                     loss = self.train_step(model=self.model, samples=samples, p_type='valid')
