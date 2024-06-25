@@ -7,7 +7,7 @@ Please refer to or directly use `conda` to install the environment using `enviro
 
 
 ## Training 
-To start training, simply run `train.py`. Inside, you will find Config parameters for both the visual model and the language model, which can be fine-tuned as needed.
+To start training, simply run `train.py`. Inside, you will find Config parameters for both the ViT model and the LLM model, which can be fine-tuned as needed.
 
 ###
 The main program structure and inspiration are based on minigpt-v2.
