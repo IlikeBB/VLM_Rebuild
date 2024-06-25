@@ -246,6 +246,7 @@ class Main__:
         torch.save(save_obj, save_to)
     def encode_img(self, image):
         with torch.cuda.amp.autocast(dtype=torch.float16):
+            # print(self.model.ln_vision)
             image_embeds = self.model.ln_vision(self.model.visual_encoder(image))
             image_embeds = image_embeds[:, 1:, :]
             bs, pn, hs = image_embeds.shape
