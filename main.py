@@ -247,9 +247,15 @@ class Main__:
     def encode_img(self, image):
         with torch.cuda.amp.autocast(dtype=torch.float16):
             # print(self.model.ln_vision)
-            image_embeds = self.model.ln_vision(self.model.visual_encoder(image))
+            image_embeds = self.model.visual_encoder(image)
+            # print(image_embeds.shape)
+            image_embeds = self.model.ln_vision(image_embeds)
+            # torch.Size([1, 577, 1024])  imgsize 336
+            # torch.Size([1, 1025, 1408]) imgsize 448
+            # image_embeds = self.model.ln_vision(self.model.visual_encoder(image))
             image_embeds = image_embeds[:, 1:, :]
             bs, pn, hs = image_embeds.shape
+            # print(bs, pn, hs)
             image_embeds = image_embeds.view(bs, int(pn / 4), int(hs * 4))
             img_embeds = self.model.llama_proj(image_embeds.cuda().to(torch.float32))
             img_atts = torch.ones(img_embeds.size()[:-1], dtype=torch.long).to(image.device)
@@ -394,7 +400,7 @@ class Main__:
         train_data_set = COCOCaptionDataset(vis_root=self.model_config['vis_root_train'], 
                                       ann_paths=self.model_config['ann_paths_train'],
                                       img_size = self.vit_config['image_size'])
-        train_dataloader =DataLoader(train_data_set, batch_size=1, num_workers=10, shuffle=True, pin_memory=True)
+        train_dataloader =DataLoader(train_data_set, batch_size=self.model_config['batch_size'], num_workers=10, shuffle=True, pin_memory=True)
         
         if self.model_config['vis_root_valid']!=None and self.model_config['ann_paths_valid']!=None:
             valid_data_set = COCOCaptionDataset(vis_root=self.model_config['vis_root_valid'], 
