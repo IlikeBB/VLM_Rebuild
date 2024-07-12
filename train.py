@@ -6,10 +6,10 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 from main import Main__
 
 model_config = {'amp':True, 'use_distributed':False,'accum_grad_iters':1,
-                'batch_size':5,
+                'batch_size':1,
                 'chat_template': True, 'end_sym': '\n', 'prompt_template': "[INST] {} [/INST]",
                 'max_txt_len': 1024, 'max_context_len': 3500,
-                'ouput_dir': './llama3_vit_L-clip336',
+                'ouput_dir': './llama3_vit_B-clip224-b16', #./llama3_vit_L-clip336, ./llama3_vit_B-clip224-b16
                 'stage_ckpt': '/ssd3/chih/LLM/MiniGPT-4-ckpt/checkpoint_stage3.pth', 
                 'vis_root_train': './dataset/minigpt_casing_train/coco/image/train',
                 'ann_paths_train': ['./dataset/minigpt_casing_train/coco_caption/defe_ready_anno.json'],
@@ -26,8 +26,8 @@ llm_config = {'llama_model':'/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct', 'low_reso
 
 
 vit_config = {'model_name':'clip_large_336', #eva_clip_g, clip_large_336
-              'model_path':"../../VITModel/clip-vit-large-patch14-336",
-              'image_size': 336,  #bilp2 = 448, clip = 224 or 336
+              'model_path':"../../VITModel/clip-vit-base-patch16", #clip-vit-base-patch16, clip-vit-large-patch14-336
+              'image_size': 224,  #bilp2 = 448, clip = 224 or 336
               'drop_path_rate': 0, 'use_grad_checkpoint': True, 'vit_precision': 'fp16', 'freeze_vit': True, }
 
 lr_config = {'init_lr': 1e-5, 'beta2':0.999,'min_lr': 1e-6, 'decay_rate': None, 'weight_decay':0.05,
