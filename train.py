@@ -10,11 +10,11 @@ model_config = {'amp':True, 'use_distributed':False,'accum_grad_iters':1,
                 'chat_template': True, 
                 'end_sym': [
                     '\n {} </s>',
-                    "\n <|start_header_id|>assistant<|end_header_id|>{}<|eot_id|>"
+                    "\n <|start_header_id|>assistant<|end_header_id|> {} <|eot_id|>"
                 ],# list[0] = llama2, list[1] = llama3
                 'prompt_template': [
                 "<s>[INST] {} [/INST]", 
-                """<|begin_of_text|><|start_header_id|>user<|end_header_id|>{}<|eot_id|>"""
+                """<|begin_of_text|><|start_header_id|>user<|end_header_id|> {} <|eot_id|>"""
                 ],# list[0] = llama2, list[1] = llama3
                 'max_txt_len': 1024, 'max_context_len': 3500,
                 'ouput_dir': './model_FT_weight/llama3_vit_L-clip336', #./llama3_vit_L-clip336, ./llama3_vit_B-clip224-b16
