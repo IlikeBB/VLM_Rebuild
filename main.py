@@ -1,4 +1,4 @@
-import glob, sys, os
+import glob, sys, os, re
 import torch
 import numpy as np
 import pandas as pd
@@ -25,7 +25,6 @@ class Main__:
         self.distributed_ = self.model_config['use_distributed']
         self.scaler = None
         self.curr_device = None #從sample定位
-
     def distributed_DDP(self,device_ids=[]):
         from torch.nn.parallel import DistributedDataParallel as DDP
         self.model = DDP(self.model, device_ids=device_ids, find_unused_parameters=True)
@@ -67,21 +66,22 @@ class Main__:
             outputs = self.model.llama_model.generate(
                 inputs_embeds=embs,
                 attention_mask=attn_mask,
-                max_new_tokens=64,
+                max_new_tokens=20,
                 num_beams=1,
                 length_penalty=1,
-                temperature=1,
-                do_sample=False,
+                temperature=0.5,
+                do_sample=True,
                 min_length=1,
                 top_p=0.9,
                 repetition_penalty=1,
-                stopping_criteria=[StoppingCriteriaSub]
+                # stopping_criteria=[StoppingCriteriaSub]
             )
         answers = []
         for output_token in outputs:
             if output_token[0] == 0:
                 output_token = output_token[1:]
-            output_texts = self.model.llama_tokenizer.decode(output_token, skip_special_tokens=True)
+            output_texts = self.model.llama_tokenizer.decode(output_token, skip_special_tokens=False)
+        print(output_texts)
         output_texts = output_texts.split('</s>')[0]  # remove the stop sign </s>
         output_texts = output_texts.replace("<s>", "")
         output_texts = output_texts.split(r'[/INST]')[-1].strip()
@@ -136,7 +136,6 @@ class Main__:
         for idx, (each_img_embed, each_prompt) in enumerate(zip(img_embeds, prompts)):
             pn = each_img_embed.shape[-2]
             p_segs = each_prompt.split('<ImageHere>')
-            # print(p_segs)
             interleave_emb = []
             # 前半段句子
             for idx, seg in enumerate(p_segs[:-1]): #該loop是為了應用於影片，單張圖像也可使用
@@ -272,13 +271,20 @@ class Main__:
         # print(img_atts.shape, img_embeds.shape)
         # question process
         instruction = samples["instruction_input"]
+
+
+        # 使用正則表達式進行檢查
+        
+    # 如果任何一個模式匹配成功
         if self.chat_template: #添加[INSt]{}[/INST]
-                instruction = [self.prompt_template.format(instruct) for instruct in instruction]
+            instruction = [self.prompt_template.format(instruct) for instruct in instruction]
         cond_embeds, cond_atts = self.prompt_wrap(img_embeds, img_atts, instruction, tokenizer = self.model.llama_tokenizer)
         # print(cond_embeds.shape, cond_atts.shape)
         # answer process
         self.model.llama_tokenizer.padding_side = 'right'
-        text = [t + self.end_sym for t in samples["answer"]] # 加上換行結束符號
+        # if self.model_config
+        
+        text = [self.end_sym.format(t) for t in samples["answer"]] # 加上換行結束符號
         regress_tokens = self.model.llama_tokenizer(text,
                                             return_tensors="pt", padding="longest", truncation=True, 
                                             max_length=self.max_txt_len, add_special_tokens=False
@@ -396,7 +402,16 @@ class Main__:
             self.scaler = torch.cuda.amp.GradScaler()
         self.optimizer = self.init_optimizer(lr_config = self.lr_config)
         self.lr_scheduler = self.lr_scheduler_cls(lr_config = self.lr_config)
-        
+        # ====================Prompt Format====================
+        patterns = ["Llama-3", "Llama3", "llama3", "llama-3"]
+        pattern = re.compile("|".join(patterns), flags=re.IGNORECASE)
+        if pattern.search(self.llm_config['llama_model']):
+            self.prompt_template = self.prompt_template[1]
+            self.end_sym = self.end_sym[1]
+        else:
+            self.prompt_template = self.prompt_template[0]
+            self.end_sym = self.end_sym[0]
+        # ========================================================
         train_data_set = COCOCaptionDataset(vis_root=self.model_config['vis_root_train'], 
                                       ann_paths=self.model_config['ann_paths_train'],
                                       img_size = self.vit_config['image_size'])
