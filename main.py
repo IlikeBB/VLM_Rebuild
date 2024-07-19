@@ -30,6 +30,7 @@ class Main__:
         self.model = DDP(self.model, device_ids=device_ids, find_unused_parameters=True)
         
     def get_context_emb(self, prompt, img_list):
+        # print(prompt)
         device = img_list[0].device
         prompt_segs = prompt.split('<ImageHere>')
         assert len(prompt_segs) == len(img_list) + 1, "Unmatched numbers of image placeholders and images."
@@ -50,6 +51,7 @@ class Main__:
     def chat_module(self, samples = None): #不太穩定，僅供測試，直接從minigpt搬過來，尚未整理
         atts_img, img_embeds = self.encode_img(samples['image'])
         image_lists = [[image_emb[None]] for image_emb in img_embeds]
+        samples['instruction_input'] = [self.prompt_template.format(instruct) for instruct in samples['instruction_input']]
         batch_embs = [self.get_context_emb(text, img_list) for text, img_list in zip(samples['instruction_input'], image_lists)]
         batch_size = len(batch_embs)
         max_len = max([emb.shape[1] for emb in batch_embs])
@@ -81,10 +83,10 @@ class Main__:
             if output_token[0] == 0:
                 output_token = output_token[1:]
             output_texts = self.model.llama_tokenizer.decode(output_token, skip_special_tokens=False)
-        print(output_texts)
-        output_texts = output_texts.split('</s>')[0]  # remove the stop sign </s>
-        output_texts = output_texts.replace("<s>", "")
-        output_texts = output_texts.split(r'[/INST]')[-1].strip()
+        # print(output_texts)
+        # output_texts = output_texts.split('</s>')[0]  # remove the stop sign </s>
+        # output_texts = output_texts.replace("<s>", "")
+        # output_texts = output_texts.split(r'[/INST]')[-1].strip()
         # print(output_texts)
         answers.append(output_texts)
         return answers
