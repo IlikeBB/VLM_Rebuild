@@ -1,4 +1,4 @@
-import glob, sys, os
+import glob, sys, os, re
 import torch
 import numpy as np
 import pandas as pd
@@ -25,12 +25,12 @@ class Main__:
         self.distributed_ = self.model_config['use_distributed']
         self.scaler = None
         self.curr_device = None #從sample定位
-
     def distributed_DDP(self,device_ids=[]):
         from torch.nn.parallel import DistributedDataParallel as DDP
         self.model = DDP(self.model, device_ids=device_ids, find_unused_parameters=True)
         
     def get_context_emb(self, prompt, img_list):
+        # print(prompt)
         device = img_list[0].device
         prompt_segs = prompt.split('<ImageHere>')
         assert len(prompt_segs) == len(img_list) + 1, "Unmatched numbers of image placeholders and images."
@@ -51,6 +51,7 @@ class Main__:
     def chat_module(self, samples = None): #不太穩定，僅供測試，直接從minigpt搬過來，尚未整理
         atts_img, img_embeds = self.encode_img(samples['image'])
         image_lists = [[image_emb[None]] for image_emb in img_embeds]
+        samples['instruction_input'] = [self.prompt_template.format(instruct) for instruct in samples['instruction_input']]
         batch_embs = [self.get_context_emb(text, img_list) for text, img_list in zip(samples['instruction_input'], image_lists)]
         batch_size = len(batch_embs)
         max_len = max([emb.shape[1] for emb in batch_embs])
@@ -67,24 +68,25 @@ class Main__:
             outputs = self.model.llama_model.generate(
                 inputs_embeds=embs,
                 attention_mask=attn_mask,
-                max_new_tokens=64,
+                max_new_tokens=20,
                 num_beams=1,
                 length_penalty=1,
-                temperature=1,
-                do_sample=False,
+                temperature=0.5,
+                do_sample=True,
                 min_length=1,
                 top_p=0.9,
                 repetition_penalty=1,
-                stopping_criteria=[StoppingCriteriaSub]
+                # stopping_criteria=[StoppingCriteriaSub]
             )
         answers = []
         for output_token in outputs:
             if output_token[0] == 0:
                 output_token = output_token[1:]
-            output_texts = self.model.llama_tokenizer.decode(output_token, skip_special_tokens=True)
-        output_texts = output_texts.split('</s>')[0]  # remove the stop sign </s>
-        output_texts = output_texts.replace("<s>", "")
-        output_texts = output_texts.split(r'[/INST]')[-1].strip()
+            output_texts = self.model.llama_tokenizer.decode(output_token, skip_special_tokens=False)
+        # print(output_texts)
+        # output_texts = output_texts.split('</s>')[0]  # remove the stop sign </s>
+        # output_texts = output_texts.replace("<s>", "")
+        # output_texts = output_texts.split(r'[/INST]')[-1].strip()
         # print(output_texts)
         answers.append(output_texts)
         return answers
@@ -136,7 +138,6 @@ class Main__:
         for idx, (each_img_embed, each_prompt) in enumerate(zip(img_embeds, prompts)):
             pn = each_img_embed.shape[-2]
             p_segs = each_prompt.split('<ImageHere>')
-            # print(p_segs)
             interleave_emb = []
             # 前半段句子
             for idx, seg in enumerate(p_segs[:-1]): #該loop是為了應用於影片，單張圖像也可使用
@@ -247,9 +248,15 @@ class Main__:
     def encode_img(self, image):
         with torch.cuda.amp.autocast(dtype=torch.float16):
             # print(self.model.ln_vision)
-            image_embeds = self.model.ln_vision(self.model.visual_encoder(image))
+            image_embeds = self.model.visual_encoder(image)
+            # print(image_embeds.shape)
+            image_embeds = self.model.ln_vision(image_embeds)
+            # torch.Size([1, 577, 1024])  imgsize 336
+            # torch.Size([1, 1025, 1408]) imgsize 448
+            # image_embeds = self.model.ln_vision(self.model.visual_encoder(image))
             image_embeds = image_embeds[:, 1:, :]
             bs, pn, hs = image_embeds.shape
+            # print(bs, pn, hs)
             image_embeds = image_embeds.view(bs, int(pn / 4), int(hs * 4))
             img_embeds = self.model.llama_proj(image_embeds.cuda().to(torch.float32))
             img_atts = torch.ones(img_embeds.size()[:-1], dtype=torch.long).to(image.device)
@@ -266,13 +273,20 @@ class Main__:
         # print(img_atts.shape, img_embeds.shape)
         # question process
         instruction = samples["instruction_input"]
+
+
+        # 使用正則表達式進行檢查
+        
+    # 如果任何一個模式匹配成功
         if self.chat_template: #添加[INSt]{}[/INST]
-                instruction = [self.prompt_template.format(instruct) for instruct in instruction]
+            instruction = [self.prompt_template.format(instruct) for instruct in instruction]
         cond_embeds, cond_atts = self.prompt_wrap(img_embeds, img_atts, instruction, tokenizer = self.model.llama_tokenizer)
         # print(cond_embeds.shape, cond_atts.shape)
         # answer process
         self.model.llama_tokenizer.padding_side = 'right'
-        text = [t + self.end_sym for t in samples["answer"]] # 加上換行結束符號
+        # if self.model_config
+        
+        text = [self.end_sym.format(t) for t in samples["answer"]] # 加上換行結束符號
         regress_tokens = self.model.llama_tokenizer(text,
                                             return_tensors="pt", padding="longest", truncation=True, 
                                             max_length=self.max_txt_len, add_special_tokens=False
@@ -390,11 +404,20 @@ class Main__:
             self.scaler = torch.cuda.amp.GradScaler()
         self.optimizer = self.init_optimizer(lr_config = self.lr_config)
         self.lr_scheduler = self.lr_scheduler_cls(lr_config = self.lr_config)
-        
+        # ====================Prompt Format====================
+        patterns = ["Llama-3", "Llama3", "llama3", "llama-3"]
+        pattern = re.compile("|".join(patterns), flags=re.IGNORECASE)
+        if pattern.search(self.llm_config['llama_model']):
+            self.prompt_template = self.prompt_template[1]
+            self.end_sym = self.end_sym[1]
+        else:
+            self.prompt_template = self.prompt_template[0]
+            self.end_sym = self.end_sym[0]
+        # ========================================================
         train_data_set = COCOCaptionDataset(vis_root=self.model_config['vis_root_train'], 
                                       ann_paths=self.model_config['ann_paths_train'],
                                       img_size = self.vit_config['image_size'])
-        train_dataloader =DataLoader(train_data_set, batch_size=1, num_workers=10, shuffle=True, pin_memory=True)
+        train_dataloader =DataLoader(train_data_set, batch_size=self.model_config['batch_size'], num_workers=10, shuffle=True, pin_memory=True)
         
         if self.model_config['vis_root_valid']!=None and self.model_config['ann_paths_valid']!=None:
             valid_data_set = COCOCaptionDataset(vis_root=self.model_config['vis_root_valid'], 

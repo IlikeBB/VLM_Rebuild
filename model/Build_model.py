@@ -10,6 +10,7 @@ from transformers import LlamaTokenizer, AutoTokenizer, BitsAndBytesConfig
 from peft import (LoraConfig, get_peft_model, prepare_model_for_kbit_training)
                 #   prepare_model_for_int8_training
 from model.eva_vit import create_eva_vit_g
+from model.other_vit import create_clip
 from model.MiniGPT_LlamaForCausalLM import LlamaForCausalLM
 
 class build_vlm_model(nn.Module):
@@ -83,17 +84,18 @@ class build_vlm_model(nn.Module):
         does not change anymore."""
         return mode
     @classmethod
-    def init_vision_encoder(self, model_name, img_size, drop_path_rate, use_grad_checkpoint, precision, freeze):
+    def init_vision_encoder(self, model_name, img_size, drop_path_rate, use_grad_checkpoint, precision, freeze, vit_path=None):
         logging.info('Loading VIT')
 
-        assert model_name == "eva_clip_g", "vit model must be eva_clip_g for current version of MiniGPT-4"
+        # assert model_name == "eva_clip_g", "vit model must be eva_clip_g for current version of MiniGPT-4"
         if not freeze:
             precision = "fp32"  # fp16 is not for training
-
-        visual_encoder = create_eva_vit_g(
-            img_size, drop_path_rate, use_grad_checkpoint, precision
-        )
-
+        if model_name=='eva_clip_g':
+            visual_encoder = create_eva_vit_g(
+                img_size, drop_path_rate, use_grad_checkpoint, precision
+            )
+        else:
+            visual_encoder = create_clip(model_path=vit_path, img_size=img_size, precision="fp16")
         ln_vision = LayerNorm(visual_encoder.num_features)
 
         if freeze:
@@ -131,7 +133,7 @@ class Main_model(build_vlm_model):
         # image shape = [bs, rgb, h, w](torch.float16)
         self.visual_encoder, self.ln_vision = self.init_vision_encoder(vit_config['model_name'],vit_config['image_size'],
                                                                 vit_config['drop_path_rate'],vit_config['use_grad_checkpoint'],
-                                                                vit_config['vit_precision'],vit_config['freeze_vit'])
+                                                                vit_config['vit_precision'],vit_config['freeze_vit'],vit_path = vit_config['model_path'])
         img_f_dim = self.visual_encoder.num_features * 4
         # model.visual_encoder.num_features = 1408
         self.llama_proj = nn.Linear(img_f_dim, self.llama_model.config.hidden_size)

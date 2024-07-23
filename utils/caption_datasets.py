@@ -165,7 +165,8 @@ class COCOCaptionDataset(BaseDataset, __DisplMixin):
         caption = self.text_processor(ann["caption"])
         instruction = random.choice(self.instruction_pool)
         # instruction = custom_des
-        instruction = "<Img><ImageHere></Img> [caption] {} ".format(instruction)
+        if True: #task type = [caption, ....]
+            instruction = "<Img><ImageHere></Img> [caption] {} ".format(instruction)
         return {
             "image": image,
             "answer": caption,
