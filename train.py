@@ -17,7 +17,8 @@ model_config = {'amp':True, 'use_distributed':False,'accum_grad_iters':1,
                 """<|begin_of_text|><|start_header_id|>user<|end_header_id|> {} <|eot_id|>"""
                 ],# list[0] = llama2, list[1] = llama3
                 'max_txt_len': 1024, 'max_context_len': 3500,
-                'ouput_dir': './model_FT_weight/llama3_vit_L-clip336', #./llama3_vit_L-clip336, ./llama3_vit_B-clip224-b16
+                # 'ouput_dir': './model_FT_weight/llama3_vit_L-clip336', #./llama3_vit_L-clip336, ./llama3_vit_B-clip224-b16
+                'ouput_dir': './model_FT_weight/llama3_tw_vit_L-clip336', #./llama3_vit_L-clip336, ./llama3_vit_B-clip224-b16
                 # 'ouput_dir': './demo', #./llama3_vit_L-clip336, ./llama3_vit_B-clip224-b16
                 'stage_ckpt': '/ssd3/chih/LLM/MiniGPT-4-ckpt/checkpoint_stage3.pth', 
                 'vis_root_train': './dataset/minigpt_casing_train/coco/image/train',
@@ -28,9 +29,13 @@ model_config = {'amp':True, 'use_distributed':False,'accum_grad_iters':1,
 # llm_config = {'llama_model':'/ssd3/chih/LLM/Llama-2-7b-chat-hf', 'low_resource':True, 'low_res_device':0, 
 #               'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
 #               }
-llm_config = {'llama_model':'/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct', 'low_resource':True, 'low_res_device':0, 
+# llm_config = {'llama_model':'/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct', 'low_resource':True, 'low_res_device':0, 
+#               'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
+#               }
+llm_config = {'llama_model':'/ssd3/chih/LLM/Llama-3-Taiwan-8B-Instruct-DPO', 'low_resource':True, 'low_res_device':0, 
               'lora_r':64, 'lora_target_modules':["q_proj", "v_proj"], 'lora_alpha':16,'lora_dropout':0.05
               }
+
 # '/ssd3/chih/LLM/Meta-Llama-3-8B-Instruct'
 
 
